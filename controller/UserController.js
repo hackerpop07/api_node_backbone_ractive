@@ -17,9 +17,12 @@ module.exports = {
         });
     },
     delete: (req, res) => {
-        User.deleteOne({_id: req.params.id}, function (err) {
-            if (err) throw  next(err);
-            res.send({_id: req.params.id});
+        User.findByIdAndRemove(req.params.id, function (err) {
+            if (err)
+                res.send(err);
+            else
+                res.json({id: req.params.id});
+                // res.json({message: 'Offer Deleted!'});
         });
     },
     update: (req, res) => {

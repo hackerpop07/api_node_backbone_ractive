@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ractive/0.9.0-build-116/ractive.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script type="text/javascript" src="./js/jquery-3.4.1.min.js"></script>
+    <script type="text/javascript" src="./js/underscore-min.js"></script>
+    <script type="text/javascript" src="./js/backbone-min.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/x-handlebars-template" id="template">
+    <div class="container">
+
+        <users/>
+
+    </div>
+</script>
+
+<script id="users" type="text/x-handlebars-template">
+    <h1>Table</h1>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Address</th>
+            <th>Gender</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{ #users: i }}
+        <tr>
+            <td>{{++i}}</td>
+            <td>{{name}}</td>
+            <td>{{address}}</td>
+            <td>{{gender}}</td>
+            <td>
+                <button class="btn btn-warning" on-click="@this.editUser(_id)">Edit</button>
+                <button class="btn btn-danger" on-click="@this.deleteUser(_id)">Delete</button>
+            </td>
+        </tr>
+        {{ /users }}
+        </tbody>
+    </table>
+    <div class="col-lg-4">
+        <form on-submit="addUser">
+            <input class="form-control" type="text" value="{{userIndex}}" hidden>
+            <input class="form-control" type="text" placeholder="Users Name" value="{{userName}}">
+            <input class="form-control" type="text" placeholder="Users Address" value="{{userAddress}}">
+            <input class="form-control" type="text" placeholder="Users Gender" value="{{userGender}}">
+            <input type="submit" value="Submit" class="btn btn-success">
+        </form>
+    </div>
+</script>
+
+<script>
+    // Backbone.Model.prototype.idAttribute = '_id'
+    // Model
+    var User = Backbone.Model.extend({
+        defaults: {
+            name: '',
+            address: '',
+            gender: '',
+        },
+        destroy: function (options) {
+            var opts = _.extend({url: '/api/users/' + this.id}, options || {});
+            return Backbone.Model.prototype.destroy.call(this, opts);
+        }
+    });
+
+    // Collection
+    var UserCollection = Backbone.Collection.extend({
+        url: "/api/users",
+    });
+
+    let users = new UserCollection;
+
+    var Users = Ractive.extend({
+        template: "#users",
+        model: new User(),
+        on: {
+            render: function () {
+                users.fetch().then((data) => {
+                    this.set("users", data)
+                })
+            },
+            addUser: function () {
+                users.create({
+                    name: this.get("userName"),
+                    address: this.get("userAddress"),
+                    gender: this.get("userGender"),
+                });
+                this.set("userName", "")
+                this.set("userAddress", "")
+                this.set("userGender", "")
+                this.render();
+                return false;
+            }
+        },
+        data: {
+            users: [],
+            userIndex: "",
+            userName: "",
+            userAddress: "",
+            userGender: ""
+        },
+        deleteUser: function (id) {
+            let user = new User({_id: id});
+            user.destroy({
+                success: function (response) {
+                    console.log('Successfully DELETED user with _id: ' + response.toJSON().id);
+                },
+                error: function (err) {
+                    console.log('Failed to delete user!' + err);
+                }
+            });
+        }
+    });
+
+
+    var ractive = Ractive({
+        el: "#app",
+        template: "#template",
+        components: {
+            users: Users,
+        },
+    });
+
+</script>
+</body>
+</html>

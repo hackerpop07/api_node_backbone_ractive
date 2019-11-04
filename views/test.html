@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>create model</title>
+    <link rel="stylesheet" type="text/css" href="../node_modules/bootstrap/dist/css/bootstrap.min.css"/>
+    <script type="text/javascript" src="../node_modules/jquery/dist/jquery.min.js"></script>
+    <script type="text/javascript" src="../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../node_modules/underscore/underscore-min.js"></script>
+    <script type="text/javascript" src="../node_modules/backbone/backbone-min.js"></script>
+    <script type="text/javascript" src="../node_modules/ractive/ractive.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <div class="user-container"></div>
+</div>
+
+<!-- Modal add edit user -->
+<div id="user-form-modal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <!-- Modal content-->
+        <div class="modal-content user-form-container"></div>
+    </div>
+</div>
+
+<script type="text/ractive" id="user-form-body">
+        <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">{{ title }}</h4>
+            </div>
+            <!-- Modal body -->
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="id">Id</label>
+                    <input type="text" name="id" class="form-control" value="{{ user.id }}" {{ !isAdd ? 'disabled' : '' }} />
+                </div>
+                <div class="form-group">
+                    <label for="first-name">FirstName</label>
+                    <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}" />
+                </div>
+                <div class="form-group">
+                    <label for="last-name">LastName</label>
+                    <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}" />
+                </div>
+                <div class="form-group">
+                    <label for="avatar">Avatar</label>
+                    <input type="text" name="avatar" class="form-control" value="{{ user.avatar }}" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="add-user" on-click="@this.saveUser(user, isAdd)">{{ submitTitle }}</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+
+
+
+</script>
+
+<script type="text/ractive" id="user-template">
+        <div class="row">
+            <button class="btn btn-primary" on-click="@this.addUser()">Add User</button>
+        </div>
+        <div class="row">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Name</th>
+                        <th>Birthday</th>
+                        <th>Address</th>
+                        <th>Gender</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ #each users as user }}
+                        <tr>
+                            <td>{{ user._id }}</td>
+                            <td>{{ user.name }}</td>
+                            <td>{{ user.birthday }}</td>
+                            <td>{{ user.address }}</td>
+                            <td>{{ user.gender }}</td>
+                            <td>
+                                <button class="btn btn-warning" on-click="@this.editUser(user.id)">Edit</button>
+                                <button class="btn btn-danger" on-click="@this.deleteUser(user.id)">Delete</button>
+                            </td>
+                        </tr>
+                    {{ else }}
+                        <tr>
+                            <td colspan="5">No results</td>
+                        </tr>
+                    {{ /each }}
+                </tbody>
+            </table>
+        </div>
+
+
+
+</script>
+
+<script type="text/javascript">
+
+    // Model
+    var User = Backbone.Model.extend({
+        defaults: {
+            name: '',
+            birthday: '',
+            address: '',
+            gender: '',
+        }
+    });
+
+    // Collection
+    var UserCollection = Backbone.Collection.extend({
+        url: "http://localhost:3000/api/users",
+        model: User
+    });
+
+    var users = new UserCollection();
+    // users.fetch({
+    //     success: function (response) {
+    //         // console.log(response.toJSON());
+    //     },
+    //     error: function () {
+    //         console.log('Failed to get users!');
+    //     }
+    // });
+    users.fetch({
+        success: function (response) {
+
+        },
+        error: function () {
+            console.log('Failed to get users!');
+        }
+    });
+
+    var appRactive = Ractive({
+        target: '.user-container',
+        template: '#user-template',
+        data: {
+            users: users.toJSON()
+        },
+        addUser: function () {
+            userRactiveForm.set('title', 'Add user');
+            userRactiveForm.set('submitTitle', 'Save');
+            $('#user-form-modal').modal('show');
+        },
+        editUser: function (userId) {
+            customeEvents.trigger('editUser', userId);
+        },
+        deleteUser: function (userId) {
+            customeEvents.trigger('deleteUser', userId);
+        },
+    });
+
+    var userRactiveForm = Ractive({
+        target: '.user-form-container',
+        template: '#user-form-body',
+        data: {
+            user: new User(),
+            isAdd: true
+        },
+        saveUser: function (user, isAdd) {
+            if (isAdd) {
+                customeEvents.trigger('addUser', user);
+            } else {
+                customeEvents.trigger('updateUser', user.id, user);
+            }
+
+            $('#user-form-modal').modal('hide');
+        },
+    });
+
+</script>
+</body>
+</html>
